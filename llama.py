@@ -42,7 +42,10 @@ class LayerNorm(torch.nn.Module):
             torch.Tensor: The normalized tensor.
         """
         # todo
-        raise NotImplementedError
+        mean_x = torch.mean(x, dim=-1, keepdim=True)
+        var_x = torch.var(x, dim=-1, keepdim=True, unbiased=False)
+        normalized_x = (x - mean_x) / torch.sqrt(var_x + self.eps)
+        return normalized_x
 
     def forward(self, x):
         """
@@ -106,7 +109,13 @@ class Attention(nn.Module):
         jointly using matrix/tensor operations.
         '''
         # todo
-        raise NotImplementedError
+        d_k = key.size(-1)
+        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
+        if self.causal:
+            mask = self.causal_mask[:scores.size(-2), :scores.size(-1)]
+            scores = scores.masked_fill(mask == 0, float('-inf'))
+        attn = torch.matmul(torch.nn.functional.softmax(scores, dim=-1), value)
+        return attn
 
 
     def forward(
@@ -211,7 +220,14 @@ class LlamaLayer(nn.Module):
            output of the feed-forward network
         '''
         # todo
-        raise NotImplementedError
+        x1 = self.attention_norm(x)
+        x2 = self.attention(x1)
+        x3 = x + x2
+        x4 = self.ffn_norm(x3)
+        x5 = self.feed_forward(x4)
+        x6 = x3 + x5
+        return x6
+
 
 class Llama(LlamaPreTrainedModel):
     def __init__(self, config: LlamaConfig):
@@ -301,12 +317,17 @@ class Llama(LlamaPreTrainedModel):
                 6) Renormalize the remaining probabilities so they sum to 1.
                 7) Sample from this filtered probability distribution.
                 '''
-                # todo 
+                # todo
+                logits_scaled = logits / temperature
+                logits_softmax = torch.nn.functional.softmax(logits_scaled, dim=-1)
+                sorted_probs, sorted_indices = torch.sort(logits_softmax, descending=True, dim=-1)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+                logits_softmax_filtered = sorted_probs.masked_fill(cumulative_probs < top_p, 0.0)  # Keep nucleus
+                renormalized_probs = logits_softmax_filtered / logits_softmax_filtered.sum(dim=-1, keepdim=True)
+                sampled_positions = torch.multinomial(renormalized_probs, num_samples=1)  # (batch, 1)
 
-                raise NotImplementedError
                 # map to original vocab indices
-                idx_next = None
-            
+                idx_next = sorted_indices.gather(1, sampled_positions)  # Get original vocab indices            
             # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
 
