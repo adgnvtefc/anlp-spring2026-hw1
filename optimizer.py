@@ -35,7 +35,7 @@ class AdamW(Optimizer):
 
             # TODO: Clip gradients if max_grad_norm is set
             if group['max_grad_norm'] is not None:
-                raise NotImplementedError()
+                torch.nn.utils.clip_grad_norm_(group['params'], group['max_grad_norm'])
             
             for p in group["params"]:
                 if p.grad is None:
@@ -44,23 +44,55 @@ class AdamW(Optimizer):
                 if grad.is_sparse:
                     raise RuntimeError("Adam does not support sparse gradients, please consider SparseAdam instead")
 
-                raise NotImplementedError()
-
                 # State should be stored in this dictionary
                 state = self.state[p]
 
+                if len(state) == 0:
+                    state["step"] = 0
+                    state["exp_avg"] = torch.zeros_like(p.data)
+                    state["exp_avg_sq"] = torch.zeros_like(p.data)
+
                 # TODO: Access hyperparameters from the `group` dictionary
                 alpha = group["lr"]
+                beta_1, beta_2 = group["betas"]
+                eps = group["eps"]
+                weight_decay = group["weight_decay"]
+                correct_bias = group["correct_bias"]
 
                 # TODO: Update first and second moments of the gradients
+
+                state["step"] += 1
+                exp_avg = state["exp_avg"]
+                exp_avg_sq = state["exp_avg_sq"]
+
+                exp_avg = exp_avg * beta_1 + grad * (1 - beta_1)
+                exp_avg_sq = exp_avg_sq * beta_2 + grad * grad * (1 - beta_2)
+                
+                state["exp_avg"] = exp_avg
+                state["exp_avg_sq"] = exp_avg_sq
 
                 # TODO: Bias correction
                 # Please note that we are using the "efficient version" given in Algorithm 2 
                 # https://arxiv.org/pdf/1711.05101
 
+                t = state["step"]
+                bias_corr1 = 1 - beta_1 ** t
+                bias_corr2 = 1 - beta_2 ** t
+
+                if correct_bias:
+                    m_hat = exp_avg / bias_corr1
+                    v_hat = exp_avg_sq / bias_corr2
+                else:
+                    m_hat = exp_avg
+                    v_hat = exp_avg_sq
+                
                 # TODO: Update parameters
+                denom = torch.sqrt(v_hat) + eps
+                p.data = p.data - alpha * m_hat / denom
 
                 # TODO: Add weight decay after the main gradient-based updates.
                 # Please note that the learning rate should be incorporated into this update.
+                if weight_decay > 0.0:
+                    p.data = p.data - alpha * weight_decay * p.data
 
         return loss
