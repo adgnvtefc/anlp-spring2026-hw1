@@ -18,7 +18,13 @@ def generate_addition_data(n):
     # data = []
     # ....
     # return data
-    raise NotImplementedError
+    data = set()
+    while len(data) < n:
+        a = random.randint(1000, 9999)
+        b = random.randint(1000, 9999)
+        c = a + b
+        data.add(f"{a}+{b}={c}")
+    return list(data)
 
 def generate_dataset(n, filename, save_dir="data"):
     data = generate_addition_data(n)

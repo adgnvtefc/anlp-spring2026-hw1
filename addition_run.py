@@ -71,7 +71,33 @@ def train_one_epoch(model, loader, optimizer, device):
 
     # return total_loss / n_batches
 
-    raise NotImplementedError
+    model.train()
+    total_loss = 0
+    n_batches = 0
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
+
+    for batch in tqdm(loader, desc="Training"):
+        x, y = batch
+        x, y = x.to(device), y.to(device)
+        
+        mask = (x == 12).cumsum(dim=1) >= 1
+        
+        y_masked = y.clone()
+        y_masked[~mask] = -100
+        y_masked[y == -1] = -100 
+
+        optimizer.zero_grad()
+        logits, _ = model(x, y)
+        
+        loss = loss_fn(logits.view(-1, logits.size(-1)), y_masked.view(-1))
+        
+        loss.backward()
+        optimizer.step()
+        
+        total_loss += loss.item()
+        n_batches += 1
+
+    return total_loss / n_batches
 
 
 @torch.no_grad()
@@ -95,7 +121,7 @@ def evaluate_loss(model, loader, device):
     Another Hint: 
         token id for "=" is 12. 
     """
-    # todo
+     # todo
     # model.eval()
     # total_loss = 0
     # n_batches = 0
@@ -103,7 +129,27 @@ def evaluate_loss(model, loader, device):
 
     # return total_loss / n_batches
 
-    raise NotImplementedError
+    model.eval()
+    total_loss = 0
+    n_batches = 0
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
+
+    for batch in tqdm(loader, desc="Evaluating"):
+        x, y = batch
+        x, y = x.to(device), y.to(device)
+        
+        mask = (x == 12).cumsum(dim=1) >= 1
+        y_masked = y.clone()
+        y_masked[~mask] = -100
+        y_masked[y == -1] = -100
+
+        logits, _ = model(x, y)
+        loss = loss_fn(logits.view(-1, logits.size(-1)), y_masked.view(-1))
+        
+        total_loss += loss.item()
+        n_batches += 1
+
+    return total_loss / n_batches
 
 
 
