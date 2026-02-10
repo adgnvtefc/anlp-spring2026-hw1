@@ -322,7 +322,11 @@ class Llama(LlamaPreTrainedModel):
                 logits_softmax = torch.nn.functional.softmax(logits_scaled, dim=-1)
                 sorted_probs, sorted_indices = torch.sort(logits_softmax, descending=True, dim=-1)
                 cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
-                logits_softmax_filtered = sorted_probs.masked_fill(cumulative_probs < top_p, 0.0)  # Keep nucleus
+                sorted_indices_to_remove = cumulative_probs > top_p
+                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                sorted_indices_to_remove[..., 0] = 0
+
+                logits_softmax_filtered = sorted_probs.masked_fill(sorted_indices_to_remove, 0.0)
                 renormalized_probs = logits_softmax_filtered / logits_softmax_filtered.sum(dim=-1, keepdim=True)
                 sampled_positions = torch.multinomial(renormalized_probs, num_samples=1)  # (batch, 1)
 
