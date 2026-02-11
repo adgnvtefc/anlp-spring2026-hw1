@@ -1,0 +1,1 @@
+Some better instructions or descriptions for the code implementations, especially on what attributes are in some of the dictionaries, will be nice.

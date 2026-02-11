@@ -1,0 +1,15 @@
+(llama_hw) hanmozhang@Hanmos-MacBook-Air-2 anlp-spring2026-hw1 % python addition_run.py train --use_gpu --capacity 58088448 --dim 16 --n_layers 6 --n_heads 1 --n_kv_heads 1 --epochs 2 --save_dir addition_models/ablation_6
+Args: {'command': 'train', 'use_gpu': True, 'seed': 1337, 'epochs': 2, 'batch_size': 1024, 'lr': 0.001, 'save_dir': 'addition_models/ablation_6', 'train_file': 'data/addition_train.txt', 'val_file': 'data/addition_dev.txt', 'dim': 16, 'n_layers': 6, 'n_heads': 1, 'n_kv_heads': 1, 'capacity': 58088448}
+model parameters are 25200
+193 data points saved to data/addition_train.txt
+39 data points saved to data/addition_dev.txt
+Training: 100%|████████████████████████████████████████████████████████████████| 1/1 [00:06<00:00,  6.51s/it]
+Evaluating: 100%|██████████████████████████████████████████████████████████████| 1/1 [00:06<00:00,  6.26s/it]
+Epoch 01 | train loss: 2.5770 | val loss: 2.5599
+Model saved to addition_models/ablation_6/best_model.pth
+Training: 100%|████████████████████████████████████████████████████████████████| 1/1 [00:06<00:00,  6.36s/it]
+Evaluating: 100%|██████████████████████████████████████████████████████████████| 1/1 [00:06<00:00,  6.25s/it]
+Epoch 02 | train loss: 2.5636 | val loss: 2.5454
+Model saved to addition_models/ablation_6/best_model.pth
+Config saved to addition_models/ablation_6/training_config.json
+Config saved to addition_models/ablation_6/model_config.json
